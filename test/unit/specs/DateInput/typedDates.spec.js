@@ -1,12 +1,12 @@
 import DateInput from '@/components/DateInput.vue'
-import {shallow} from '@vue/test-utils'
+import {shallowMount} from '@vue/test-utils'
 import {en} from '@/locale'
 
 describe('DateInput', () => {
   let wrapper
 
   beforeEach(() => {
-    wrapper = shallow(DateInput, {
+    wrapper = shallowMount(DateInput, {
       propsData: {
         format: 'dd MMM yyyy',
         translation: en,
@@ -40,7 +40,7 @@ describe('DateInput', () => {
   it('emits closeCalendar when return is pressed', () => {
     const input = wrapper.find('input')
     const blurSpy = jest.spyOn(input.element, 'blur')
-    input.trigger('keyup', {keyCode: 13})
+    input.trigger('keyup.enter')
     expect(blurSpy).toBeCalled()
   })
 
@@ -51,8 +51,27 @@ describe('DateInput', () => {
     expect(wrapper.emitted().clearDate).toBeDefined()
   })
 
+  it('uses custom date parser', () => {
+    wrapper.vm.parse = function (str) {
+      const tokens = str.split('/')
+      const dd = parseInt(tokens[0])
+      const MM = parseInt(tokens[1])
+      const yyyy = parseInt(tokens[2])
+      const dt = new Date(yyyy, MM - 1, dd)
+      return dt.getTime()
+    }
+    wrapper.vm.format = 'dd/MM/yyyy'
+    wrapper.vm.input.value = '07/01/2019'
+    const input = wrapper.find('input')
+    input.trigger('keyup')
+    const dt = wrapper.emitted().typedDate[0][0]
+    expect(dt.getDate()).toBe(7)
+    expect(dt.getMonth()).toBe(0)
+    expect(dt.getFullYear()).toBe(2019)
+  })
+
   it('doesn\'t emit the date if typeable=false', () => {
-    const wrapper = shallow(DateInput, {
+    const wrapper = shallowMount(DateInput, {
       propsData: {
         format: 'dd MMM yyyy',
         translation: en,
